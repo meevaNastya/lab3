@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>E-commerce Recommendation System</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="sidebar">
+
+    <div class="logo">
+        <div class="logo-icon">R</div>
+
+        <div>
+            <h2>Recsys</h2>
+            <span>Big Data Platform</span>
+        </div>
+    </div>
+
+    <nav>
+        <a class="active" href="#overview">Overview</a>
+        <a href="#recommendations">Recommendations</a>
+        <a href="#models">Models</a>
+        <a href="#analytics">Analytics</a>
+        <a href="#data">Dataset</a>
+    </nav>
+
+    <div class="tech">
+        <span>Apache Spark</span>
+        <span>PySpark</span>
+        <span>MLlib</span>
+        <span>Flask</span>
+    </div>
+
+</div>
+
+
+<main>
+
+<section id="overview">
+
+    <div class="header">
+        <div>
+            <p class="eyebrow">E-COMMERCE ANALYTICS</p>
+            <h1>Recommendation System</h1>
+            <p class="subtitle">
+                Анализ покупательского поведения и персональные
+                рекомендации на основе Instacart Market Basket Analysis
+            </p>
+        </div>
+
+
+    </div>
+
+
+    <div class="cards">
+
+        <div class="card" data-tooltip="Общее количество заказов в датасете Instacart.">
+            <span>Orders</span>
+            <strong>{{ stats.orders }}</strong>
+            <small>заказов</small>
+        </div>
+
+        <div class="card" data-tooltip="Количество уникальных пользователей в полном наборе данных.">
+            <span>Customers</span>
+            <strong>{{ stats.users }}</strong>
+            <small>уникальных пользователей</small>
+        </div>
+
+        <div class="card" data-tooltip="Количество уникальных товаров в каталоге Instacart.">
+            <span>Products</span>
+            <strong>{{ stats.products }}</strong>
+            <small>товаров</small>
+        </div>
+
+        <div class="card highlight" data-tooltip="Более 32 млн записей взаимодействий пользователь–товар, обработанных Apache Spark.">
+            <span>Interactions</span>
+            <strong>{{ stats.interactions }}</strong>
+            <small>user-product событий</small>
+        </div>
+
+    </div>
+
+
+    <div class="small-cards">
+
+        <div class="mini-card" data-tooltip="Доля товарных позиций, которые являются повторными покупками.">
+            <span>Reorder rate</span>
+            <strong>{{ stats.reorder_rate }}</strong>
+        </div>
+
+        <div class="mini-card" data-tooltip="Среднее количество товарных позиций в одном заказе.">
+            <span>Average basket</span>
+            <strong>{{ stats.basket }}</strong>
+            <small>товаров</small>
+        </div>
+
+        <div class="mini-card" data-tooltip="Popularity используется как baseline, ALS формирует рекомендации, Random Forest прогнозирует повторные покупки.">
+            <span>Models</span>
+            <strong>3</strong>
+            <small>Popularity / ALS / RF</small>
+        </div>
+
+    </div>
+
+</section>
+
+
+<section id="recommendations">
+
+    <div class="section-title">
+        <div>
+            <p class="eyebrow">PERSONALIZATION</p>
+            <h2>Recommendations</h2>
+        </div>
+    </div>
+
+
+    <div class="recommendation-search">
+
+        <div>
+            <label>User ID</label>
+
+            <div class="search-row">
+                <input type="number"
+                       id="userId"
+                       value="1"
+                       min="1"
+                       max="5000">
+
+                <button onclick="generateRecommendations()">
+                    Generate recommendations
+                </button>
+            </div>
+        </div>
+
+        <p>
+            Выберите пользователя, чтобы получить персональные
+            рекомендации и прогноз повторных покупок.
+        </p>
+
+    </div>
+
+
+    <div id="customerProfile" class="customer-profile">
+
+        <div class="customer-profile-header">
+            <div>
+                <p class="eyebrow">CUSTOMER PROFILE</p>
+                <h3 id="customerProfileTitle">User #1</h3>
+            </div>
+
+
+        </div>
+
+        <div id="customerProfileContent" class="customer-profile-grid">
+
+            <div class="customer-stat">
+                <span>Previous orders</span>
+                <strong>—</strong>
+            </div>
+
+            <div class="customer-stat">
+                <span>Unique products</span>
+                <strong>—</strong>
+            </div>
+
+            <div class="customer-stat">
+                <span>Total purchases</span>
+                <strong>—</strong>
+            </div>
+
+            <div class="customer-stat">
+                <span>Reorder rate</span>
+                <strong>—</strong>
+            </div>
+
+            <div class="customer-stat customer-stat-wide">
+                <span>Favorite department</span>
+                <strong>—</strong>
+            </div>
+
+            <div class="customer-stat customer-stat-wide">
+                <span>Favorite aisle</span>
+                <strong>—</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="recommendation-grid">
+
+        <div class="panel">
+
+            <div class="panel-heading">
+                <div>
+                    <span class="model-label">ALS</span>
+                    <h3>Рекомендуем вам</h3>
+                </div>
+
+                <span class="panel-info" data-tooltip="ALS score используется для ранжирования рекомендаций и не является вероятностью.">Top 10 · ALS score</span>
+            </div>
+
+            <div id="alsRecommendations" class="product-list">
+
+                <div class="empty">
+                    Нажмите Generate recommendations
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-heading">
+                <div>
+                    <span class="model-label green">RANDOM FOREST</span>
+                    <h3>Вероятно купит снова</h3>
+                </div>
+
+                <span class="panel-info">
+                    threshold 0.20
+                </span>
+            </div>
+
+            <div id="reorderRecommendations" class="product-list">
+
+                <div class="empty">
+                    Прогноз повторных покупок
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section id="models">
+
+    <div class="section-title">
+        <div>
+            <p class="eyebrow">MACHINE LEARNING</p>
+            <h2>Model Performance</h2>
+        </div>
+    </div>
+
+
+    <div class="charts-grid">
+
+        <div class="panel chart-panel">
+            <h3>Recommendation models</h3>
+            <p>Popularity baseline vs ALS</p>
+
+            <canvas id="recommendationChart"></canvas>
+        </div>
+
+
+        <div class="panel chart-panel">
+            <h3>Reorder prediction</h3>
+            <p>Random Forest, independent test set</p>
+
+            <canvas id="reorderChart"></canvas>
+        </div>
+
+    </div>
+
+
+    <div class="metric-row">
+
+        <div class="metric">
+            <span>Precision</span>
+            <strong>{{ models.reorder.precision }}%</strong>
+        </div>
+
+        <div class="metric">
+            <span>Recall</span>
+            <strong>{{ models.reorder.recall }}%</strong>
+        </div>
+
+        <div class="metric accent">
+            <span>F1 Score</span>
+            <strong>{{ models.reorder.f1 }}%</strong>
+        </div>
+
+        <div class="metric">
+            <span>Accuracy</span>
+            <strong>{{ models.reorder.accuracy }}%</strong>
+        </div>
+
+    </div>
+
+</section>
+
+
+<section id="analytics">
+
+    <div class="section-title">
+        <div>
+            <p class="eyebrow">CUSTOMER BEHAVIOUR</p>
+            <h2>Data Analytics</h2>
+        </div>
+    </div>
+
+
+    <div class="analytics-grid">
+
+        <div class="panel chart-panel large">
+            <h3>Top products</h3>
+            <p>Самые часто покупаемые товары</p>
+
+            <canvas id="productsChart"></canvas>
+        </div>
+
+
+        <div class="panel chart-panel">
+            <h3>Orders by hour</h3>
+            <p>Активность пользователей в течение суток</p>
+
+            <canvas id="hourChart"></canvas>
+        </div>
+
+    </div>
+
+
+    <div class="panel chart-panel full">
+        <h3>Orders by day of week</h3>
+        <p>Распределение заказов по дням недели</p>
+
+        <canvas id="dayChart"></canvas>
+    </div>
+
+</section>
+
+
+
+<section id="architecture">
+
+    <div class="section-title">
+        <div>
+            <p class="eyebrow">SYSTEM DESIGN</p>
+            <h2>System Architecture</h2>
+        </div>
+    </div>
+
+    <div class="architecture-panel">
+
+        <div class="architecture-row">
+
+            <div class="architecture-node"
+                 data-tooltip="Шесть CSV-файлов Instacart Market Basket Analysis.">
+                <span class="architecture-type">DATA</span>
+                <strong>Instacart Dataset</strong>
+                <small>CSV · 32M+ interactions</small>
+            </div>
+
+            <span class="architecture-arrow">→</span>
+
+            <div class="architecture-node"
+                 data-tooltip="Интерфейс загрузки данных, запуска pipeline и просмотра результатов.">
+                <span class="architecture-type">FRONTEND</span>
+                <strong>Web Interface</strong>
+                <small>HTML · CSS · JavaScript</small>
+            </div>
+
+            <span class="architecture-arrow">→</span>
+
+            <div class="architecture-node"
+                 data-tooltip="Flask предоставляет web-маршруты и REST API для ML-моделей.">
+                <span class="architecture-type">BACKEND</span>
+                <strong>Flask API</strong>
+                <small>Python</small>
+            </div>
+
+            <span class="architecture-arrow">→</span>
+
+            <div class="architecture-node architecture-main"
+                 data-tooltip="Apache Spark обрабатывает большой набор данных и выполняет распределённые вычисления.">
+                <span class="architecture-type">BIG DATA</span>
+                <strong>Apache Spark</strong>
+                <small>PySpark</small>
+            </div>
+
+        </div>
+
+
+        <div class="architecture-down">↓</div>
+
+
+        <div class="architecture-branches">
+
+            <div class="architecture-node"
+                 data-tooltip="Расчёт статистик и агрегаций по полному набору данных.">
+                <span class="architecture-type">ANALYTICS</span>
+                <strong>EDA & Statistics</strong>
+                <small>PySpark SQL</small>
+            </div>
+
+            <div class="architecture-node"
+                 data-tooltip="ALS формирует персональный рейтинг товаров для пользователя.">
+                <span class="architecture-type">RECOMMENDER</span>
+                <strong>ALS</strong>
+                <small>Spark MLlib</small>
+            </div>
+
+            <div class="architecture-node"
+                 data-tooltip="Random Forest оценивает вероятность повторной покупки товара.">
+                <span class="architecture-type">CLASSIFIER</span>
+                <strong>Random Forest</strong>
+                <small>Spark MLlib</small>
+            </div>
+
+        </div>
+
+
+        <div class="architecture-down">↓</div>
+
+
+        <div class="architecture-row architecture-output">
+
+            <div class="architecture-node">
+                <span class="architecture-type">STORAGE</span>
+                <strong>Saved Models</strong>
+                <small>ALS · Random Forest</small>
+            </div>
+
+            <span class="architecture-arrow">→</span>
+
+            <div class="architecture-node">
+                <span class="architecture-type">API</span>
+                <strong>Prediction API</strong>
+                <small>Recommendations · Reorders</small>
+            </div>
+
+            <span class="architecture-arrow">→</span>
+
+            <div class="architecture-node architecture-main">
+                <span class="architecture-type">RESULT</span>
+                <strong>Analytics Dashboard</strong>
+                <small>Interactive results</small>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section id="data">
+
+    <div class="section-title">
+        <div>
+            <p class="eyebrow">BIG DATA</p>
+            <h2>Dataset</h2>
+        </div>
+    </div>
+
+
+
+    <div class="pipeline-panel">
+
+        <div class="pipeline-header">
+            <div>
+                <p class="eyebrow">DATA PIPELINE</p>
+                <h3>Upload & Process Dataset</h3>
+                <p>
+                    Загрузите совместимый e-commerce датасет и запустите обработку
+                    большого набора данных с помощью Apache Spark.
+                </p>
+            </div>
+
+            {% if dataset_ready %}
+            <span class="pipeline-ready">Dataset validated</span>
+            {% elif uploaded_files|length == 6 %}
+            <span class="pipeline-incompatible">Dataset incompatible</span>
+            {% else %}
+            <span class="pipeline-waiting">Waiting for data</span>
+            {% endif %}
+        </div>
+
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="pipeline-messages">
+                    {% for message in messages %}
+                        <div>{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+
+        <form
+            action="{{ url_for('upload') }}"
+            method="POST"
+            enctype="multipart/form-data"
+            class="upload-form"
+        >
+            <label class="upload-area">
+                <span class="upload-icon">↑</span>
+                <strong>Select e-commerce CSV files</strong>
+                <span>
+                    orders, products, aisles, departments,
+                    prior and train interactions
+                </span>
+
+                <input
+                    type="file"
+                    name="files"
+                    accept=".csv"
+                    multiple
+                    required
+                >
+            </label>
+
+            <button type="submit" class="pipeline-button">
+                Upload dataset
+            </button>
+        </form>
+
+
+        {% if uploaded_files %}
+
+        <div class="uploaded-files">
+
+            <div class="uploaded-title">
+                Uploaded files
+                <span>{{ uploaded_files|length }}/6</span>
+            </div>
+
+            <div class="file-grid">
+                {% for filename in uploaded_files %}
+                <div class="file-item">
+                    <span class="file-check">✓</span>
+                    <span>{{ filename }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        {% if uploaded_files %}
+        <div class="schema-validation">
+
+            <div class="schema-validation-header">
+                <div>
+                    <span>SCHEMA VALIDATION</span>
+
+                    {% if dataset_validation.valid %}
+                    <strong>Dataset compatible</strong>
+                    {% else %}
+                    <strong class="dataset-incompatible">Dataset incompatible</strong>
+                    {% endif %}
+                </div>
+
+                {% if dataset_validation.valid %}
+                <span class="schema-ok">✓ VALID</span>
+                {% else %}
+                <span class="schema-error">✕</span>
+                {% endif %}
+            </div>
+
+            {% if dataset_validation.valid %}
+
+            <div class="schema-checks">
+                <span>✓ Required files</span>
+                <span>✓ Required columns</span>
+                <span>✓ Ready for Apache Spark</span>
+            </div>
+
+            {% else %}
+
+            <div class="schema-errors">
+                {% for filename, errors in dataset_validation.errors.items() %}
+                <div class="schema-error-file">
+                    <strong>{{ filename }}</strong>
+
+                    {% for error in errors %}
+                    <span>✕ {{ error }}</span>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+
+            {% endif %}
+
+        </div>
+        {% endif %}
+
+
+
+        {% if training and training.status == "trained" %}
+
+        <div class="training-result">
+
+            <div class="training-success">
+                <span class="success-icon">✓</span>
+
+                <div>
+                    <strong>Pipeline completed</strong>
+                    <p>PySpark analysis completed and both ML models trained successfully.</p>
+                </div>
+            </div>
+
+            <div class="training-details training-scope">
+
+                <div
+                    data-tooltip="Аналитика и агрегирование выполняются Apache Spark на полном датасете Instacart."
+                >
+                    <span>BIG DATA PROCESSING</span>
+                    <strong>Full dataset</strong>
+                    <small>32.4M+ interactions · Apache Spark</small>
+                </div>
+
+                <div
+                    data-tooltip="Для обучения ALS и Random Forest используется выборка из 5000 пользователей, чтобы сократить время обучения на локальном компьютере."
+                >
+                    <span>ML TRAINING</span>
+                    <strong>{{ "{:,}".format(training.users) }} users</strong>
+                    <small>Local demo subset · ALS + Random Forest</small>
+                </div>
+
+            </div>
+
+            <div class="model-summary">
+
+                <div class="model-summary-card">
+
+                    <div class="model-summary-title">
+                        <span class="model-label">ALS</span>
+                        <strong>Recommendation model</strong>
+                    </div>
+
+                    <div class="model-parameters">
+                        <div>
+                            <span>Rank</span>
+                            <strong>{{ training.rank }}</strong>
+                        </div>
+
+                        <div>
+                            <span>RegParam</span>
+                            <strong>{{ training.regParam }}</strong>
+                        </div>
+
+                        <div>
+                            <span>Alpha</span>
+                            <strong>{{ training.alpha }}</strong>
+                        </div>
+
+                        <div>
+                            <span>Iterations</span>
+                            <strong>{{ training.maxIter }}</strong>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="model-summary-card">
+
+                    <div class="model-summary-title">
+                        <span class="model-label green">RANDOM FOREST</span>
+                        <strong>Reorder prediction</strong>
+                    </div>
+
+                    <div class="model-parameters">
+                        <div>
+                            <span>Trees</span>
+                            <strong>{{ training.rfTrees }}</strong>
+                        </div>
+
+                        <div>
+                            <span>Max depth</span>
+                            <strong>{{ training.rfDepth }}</strong>
+                        </div>
+
+                        <div>
+                            <span>Threshold</span>
+                            <strong>{{ training.rfThreshold }}</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+        {% if training %}
+
+        <div class="pipeline-state">
+
+            <div class="pipeline-state-header">
+
+                <div>
+                    <span class="state-badge">
+                        <span class="state-dot"></span>
+                        CACHED RESULTS
+                    </span>
+
+                    <h3>Latest successful pipeline run</h3>
+
+                    <p>
+                        Результаты загружены из последнего успешно выполненного Apache Spark pipeline.
+                    </p>
+                </div>
+
+                <div class="last-run">
+                    <span>LAST RUN</span>
+
+                    {% if last_run %}
+                        <strong id="lastRunTime">{{ last_run }}</strong>
+                    {% else %}
+                        <strong>Previous successful run</strong>
+                    {% endif %}
+                </div>
+
+            </div>
+
+
+            <div class="system-status">
+
+                <div class="status-item">
+                    <span class="status-light"></span>
+                    <div>
+                        <small>DATASET</small>
+                        <strong>READY</strong>
+                    </div>
+                </div>
+
+                <div class="status-item">
+                    <span class="status-light"></span>
+                    <div>
+                        <small>SPARK</small>
+                        <strong>PROCESSED</strong>
+                    </div>
+                </div>
+
+                <div class="status-item">
+                    <span class="status-light"></span>
+                    <div>
+                        <small>ALS</small>
+                        <strong>TRAINED</strong>
+                    </div>
+                </div>
+
+                <div class="status-item">
+                    <span class="status-light"></span>
+                    <div>
+                        <small>RANDOM FOREST</small>
+                        <strong>TRAINED</strong>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="cached-note">
+                Аналитика выполнена на полном датасете: Apache Spark обрабатывает более 32 млн взаимодействий.
+                Для локального обучения ALS и Random Forest используется выборка из 5000 пользователей.
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        <form
+            action="{{ url_for('run_analysis') }}"
+            method="POST"
+            id="analysisForm"
+        >
+            <button
+                type="submit"
+                class="pipeline-button run-button"
+                {% if not dataset_ready %}disabled{% endif %}
+            >
+                {% if training %}Run Pipeline Again{% else %}Run Analysis & Train Models{% endif %}
+            </button>
+        </form>
+
+
+        <div id="pipelineProgress" class="pipeline-progress">
+
+            <div class="progress-top">
+                <span id="progressText">Preparing pipeline...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+
+            <div class="progress-track">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+
+            <div class="pipeline-steps pipeline-timeline">
+
+                <div class="timeline-step" id="stepDataset">
+                    <span class="timeline-dot"></span>
+                    <small>DATASET</small>
+                </div>
+
+                <div class="timeline-line"></div>
+
+                <div class="timeline-step" id="stepAnalytics">
+                    <span class="timeline-dot"></span>
+                    <small>ANALYTICS</small>
+                </div>
+
+                <div class="timeline-line"></div>
+
+                <div class="timeline-step" id="stepAls">
+                    <span class="timeline-dot"></span>
+                    <small>ALS</small>
+                </div>
+
+                <div class="timeline-line"></div>
+
+                <div class="timeline-step" id="stepRf">
+                    <span class="timeline-dot"></span>
+                    <small>RANDOM FOREST</small>
+                </div>
+
+                <div class="timeline-line"></div>
+
+                <div class="timeline-step" id="stepResults">
+                    <span class="timeline-dot"></span>
+                    <small>RESULTS</small>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="dataset-panel">
+
+        <div>
+            <h3>Instacart Market Basket Analysis</h3>
+
+            <p>
+                Реальные обезличенные данные о покупательском
+                поведении пользователей e-commerce платформы.
+            </p>
+        </div>
+
+
+        <div class="dataset-stats">
+
+            <div>
+                <strong>32,434,489</strong>
+                <span>prior interactions</span>
+            </div>
+
+            <div>
+                <strong>1,384,617</strong>
+                <span>train interactions</span>
+            </div>
+
+            <div>
+                <strong>49,688</strong>
+                <span>products</span>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<script>
+const modelData = {{ models | tojson }};
+const topProducts = {{ top_products | tojson }};
+const ordersByHour = {{ orders_by_hour | tojson }};
+const ordersByDay = {{ orders_by_day | tojson }};
+</script>
+
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+
+</body>
+</html>

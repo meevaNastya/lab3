@@ -1,0 +1,39 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Source datasets
+data/
+uploads/
+*.csv
+
+# Trained ML models
+models/
+
+# Generated results
+results/
+
+# Spark
+.sparkStaging/
+metastore_db/
+derby.log
+
+# Logs
+*.log
+
+# Temporary / backup versions
+app_backup.py
+app_before_*.py
+
+# Frontend backup versions
+static/*_backup.*
+static/*_before_*.*
+templates/*_backup.*
+templates/*_before_*.*
